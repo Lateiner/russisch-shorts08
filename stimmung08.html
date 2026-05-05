@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernmodul: бесить</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --bg: #f5f7fa;
+            --text: #2c3e50;
+            --success: #2ecc71;
+            --neutral: #95a5a6;
+            --error: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        h2 { text-align: center; color: var(--primary); margin-top: 0; }
+        p { line-height: 1.5; text-align: center; font-size: 0.95rem; margin-bottom: 20px; }
+
+        /* Draggable Items Area */
+        .vocab-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            min-height: 80px;
+            padding: 15px;
+            background: #fdfdfd;
+            border: 1px solid #edf2f7;
+            border-radius: 12px;
+        }
+
+        .word {
+            background: var(--primary);
+            color: white;
+            padding: 12px 22px;
+            border-radius: 30px;
+            cursor: grab;
+            user-select: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            touch-action: none;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background 0.3s;
+        }
+
+        .word:active { cursor: grabbing; transform: scale(1.05); }
+
+        /* Drop Zones (Scale) */
+        .scale {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .drop-zone {
+            border: 2px dashed #cbd5e0;
+            border-radius: 10px;
+            min-height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #fff;
+            transition: all 0.3s;
+        }
+
+        .drop-zone::before {
+            content: attr(data-label);
+            position: absolute;
+            left: 10px;
+            top: -12px;
+            font-size: 0.75rem;
+            background: white;
+            padding: 0 8px;
+            border-radius: 5px;
+            color: #7f8c8d;
+            font-weight: bold;
+        }
+
+        .drop-zone.hover { background: #edf2f7; border-color: var(--primary); }
+        .drop-zone.correct { border-style: solid; border-color: var(--success); background: #f0fff4; }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px;
+            gap: 15px;
+        }
+
+        #feedback {
+            font-weight: bold;
+            height: 24px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .btn-reset {
+            background-color: var(--neutral);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .btn-reset:hover { background-color: #7f8c8d; transform: translateY(-2px); }
+
+        @media (max-width: 480px) {
+            .word { font-size: 1rem; padding: 10px 18px; }
+            .container { padding: 15px; }
+            .drop-zone { min-height: 60px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Wortschatz-Training</h2>
+    <p>Ordne die russischen Verben nach ihrer Intensität – von positiv bis extrem negativ.</p>
+
+    <div class="vocab-container" id="source-zone">
+        <!-- Wörter werden per JS gemischt hier eingefügt -->
+    </div>
+
+    <div class="scale">
+        <div class="drop-zone" data-label="1. POSITIV" data-target="1"></div>
+        <div class="drop-zone" data-label="2. NEUTRAL / NEGATIV" data-target="2"></div>
+        <div class="drop-zone" data-label="3. STARK NEGATIV" data-target="3"></div>
+        <div class="drop-zone" data-label="4. EXTREM (WAHNSINNIG MACHEND)" data-target="4"></div>
+    </div>
+
+    <div class="controls">
+        <div id="feedback"></div>
+        <button class="btn-reset" onclick="resetGame()">Neustart & Mischen</button>
+    </div>
+</div>
+
+<script>
+    const sourceZone = document.getElementById('source-zone');
+    const feedback = document.getElementById('feedback');
+    const zones = document.querySelectorAll('.drop-zone');
+
+    // Wörter-Daten
+    const wordData = [
+        { id: 'w1', text: 'нравиться', val: '1' },
+        { id: 'w2', text: 'не нравиться', val: '2' },
+        { id: 'w3', text: 'раздражать', val: '3' },
+        { id: 'w4', text: 'бесить', val: '4' }
+    ];
+
+    // Initialisierung
+    function initGame() {
+        createAndShuffleWords();
+        setupDragAndDrop();
+    }
+
+    function createAndShuffleWords() {
+        sourceZone.innerHTML = '';
+        // Fisher-Yates Shuffle Algorithmus
+        const shuffled = [...wordData].sort(() => Math.random() - 0.5);
+        
+        shuffled.forEach(data => {
+            const wordEl = document.createElement('div');
+            wordEl.className = 'word';
+            wordEl.id = data.id;
+            wordEl.draggable = true;
+            wordEl.innerText = data.text;
+            wordEl.setAttribute('data-val', data.val);
+            
+            wordEl.addEventListener('dragstart', dragStart);
+            wordEl.addEventListener('touchstart', handleTouch);
+            sourceZone.appendChild(wordEl);
+        });
+    }
+
+    function setupDragAndDrop() {
+        zones.forEach(zone => {
+            zone.addEventListener('dragover', e => e.preventDefault());
+            zone.addEventListener('dragenter', e => { e.preventDefault(); zone.classList.add('hover'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('hover'));
+            zone.addEventListener('drop', dropEvent);
+        });
+    }
+
+    function dragStart(e) {
+        e.dataTransfer.setData('text/plain', e.target.id);
+    }
+
+    function dropEvent(e) {
+        e.preventDefault();
+        this.classList.remove('hover');
+        const id = e.dataTransfer.getData('text');
+        const draggableElement = document.getElementById(id);
+        handlePlacement(draggableElement, this);
+    }
+
+    function handleTouch(e) {
+        // Simple Touch-Logik: Bei Tippen wird das Wort der passenden Zone zugewiesen
+        const wordVal = this.getAttribute('data-val');
+        const targetZone = Array.from(zones).find(z => z.getAttribute('data-target') === wordVal);
+        
+        if (targetZone && targetZone.children.length === 0) {
+            handlePlacement(this, targetZone);
+        } else {
+            showFeedback("Tippe auf das richtige Feld oder ziehe das Wort.", "var(--neutral)");
+        }
+    }
+
+    function handlePlacement(element, zone) {
+        const targetVal = zone.getAttribute('data-target');
+        const wordVal = element.getAttribute('data-val');
+
+        if (zone.children.length === 0) {
+            if (targetVal === wordVal) {
+                zone.appendChild(element);
+                zone.classList.add('correct');
+                element.setAttribute('draggable', 'false');
+                element.style.cursor = 'default';
+                showFeedback("Richtig!", "var(--success)");
+                checkWin();
+            } else {
+                showFeedback("Das passt hier nicht ganz von der Stärke her.", "var(--error)");
+            }
+        }
+    }
+
+    function showFeedback(text, color) {
+        feedback.innerText = text;
+        feedback.style.color = color;
+    }
+
+    function checkWin() {
+        const correctCount = document.querySelectorAll('.drop-zone.correct').length;
+        if (correctCount === 4) {
+            showFeedback("Super! Alle Nuancen richtig zugeordnet.", "var(--success)");
+        }
+    }
+
+    function resetGame() {
+        zones.forEach(zone => {
+            zone.innerHTML = '';
+            zone.classList.remove('correct', 'hover');
+        });
+        feedback.innerText = "";
+        createAndShuffleWords();
+    }
+
+    initGame();
+</script>
+
+</body>
+</html>
