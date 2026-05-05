@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktiver Dialog: бесить</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #2ecc71;
+            --error: #e74c3c;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        h2 { color: var(--primary); text-align: center; margin-top: 0; }
+        .instruction { text-align: center; color: #7f8c8d; margin-bottom: 30px; font-size: 0.95rem; }
+
+        .dialog-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid var(--primary);
+            line-height: 2.2;
+            font-size: 1.1rem;
+        }
+
+        .line { margin-bottom: 20px; display: block; }
+        .speaker { font-weight: bold; color: var(--primary); margin-right: 10px; min-width: 60px; display: inline-block; }
+
+        select {
+            padding: 6px 10px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            outline: none;
+            font-family: inherit;
+        }
+
+        select.correct { border-color: var(--success); background-color: #eafaf1; color: #27ae60; font-weight: bold; }
+        select.wrong { border-color: var(--error); background-color: #fdedec; color: #c0392b; }
+
+        .feedback-inline {
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-left: 10px;
+            display: none;
+        }
+
+        .controls {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .btn-restart {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .dialog-box { font-size: 1rem; padding: 15px; }
+            select { width: 100%; margin: 5px 0; }
+            .speaker { display: block; margin-bottom: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Alltags-Dialog 🗣️</h2>
+    <p class="instruction">Wähle die richtige Form. Das System korrigiert dich sofort!</p>
+
+    <div class="dialog-box">
+        <!-- Lücke 1: Einzahl -->
+        <span class="line">
+            <span class="speaker">Анна:</span> Привет! Опять ты без настроения?
+        </span>
+        <span class="line">
+            <span class="speaker">Максим:</span> Да, меня просто 
+            <select onchange="validate(this, 'бесит')">
+                <option value="">...</option>
+                <option value="бесит">бесит</option>
+                <option value="бесят">бесят</option>
+            </select> 
+            эта пробка на дороге!
+            <span class="feedback-inline"></span>
+        </span>
+
+        <!-- Lücke 2: Mehrzahl -->
+        <span class="line">
+            <span class="speaker">Анна:</span> Понимаю. А меня 
+            <select onchange="validate(this, 'бесят')">
+                <option value="">...</option>
+                <option value="бесит">бесит</option>
+                <option value="бесят">бесят</option>
+            </select> 
+            эти вечные стройки в центре.
+            <span class="feedback-inline"></span>
+        </span>
+
+        <!-- Lücke 3: Neutrales Verb vs. бесить -->
+        <span class="line">
+            <span class="speaker">Максим:</span> Согласен. Но тебе же 
+            <select onchange="validate(this, 'нравится')">
+                <option value="">...</option>
+                <option value="бесит">бесит</option>
+                <option value="нравится">нравится</option>
+            </select> 
+            твой новый район?
+            <span class="feedback-inline"></span>
+        </span>
+
+        <!-- Lücke 4: Einzahl abstrakt -->
+        <span class="line">
+            <span class="speaker">Анна:</span> Район отличный, но 
+            <select onchange="validate(this, 'бесит')">
+                <option value="">...</option>
+                <option value="бесит">бесит</option>
+                <option value="бесят">бесят</option>
+            </select> 
+            то, что там нет метро.
+            <span class="feedback-inline"></span>
+        </span>
+
+        <!-- Lücke 5: Mehrzahl Personen -->
+        <span class="line">
+            <span class="speaker">Максим:</span> А меня ещё 
+            <select onchange="validate(this, 'бесят')">
+                <option value="">...</option>
+                <option value="бесит">бесит</option>
+                <option value="бесят">бесят</option>
+            </select> 
+            соседи, когда они шумят ночью.
+            <span class="feedback-inline"></span>
+        </span>
+
+        <!-- Lücke 6: Reflexiv/Neutral (Bezug auf 'это') -->
+        <span class="line">
+            <span class="speaker">Анна:</span> О да, это всех 
+            <select onchange="validate(this, 'бесит')">
+                <option value="">...</option>
+                <option value="бесит">бесит</option>
+                <option value="бесят">бесят</option>
+            </select>!
+            <span class="feedback-inline"></span>
+        </span>
+    </div>
+
+    <div class="controls">
+        <button class="btn-restart" onclick="location.reload()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    function validate(selectElement, correctAnswer) {
+        const feedback = selectElement.nextElementSibling;
+        
+        if (selectElement.value === "") {
+            selectElement.className = "";
+            feedback.style.display = "none";
+            return;
+        }
+
+        if (selectElement.value === correctAnswer) {
+            selectElement.className = "correct";
+            feedback.innerText = "✓";
+            feedback.style.color = "var(--success)";
+            feedback.style.display = "inline";
+        } else {
+            selectElement.className = "wrong";
+            feedback.innerText = "✗";
+            feedback.style.color = "var(--error)";
+            feedback.style.display = "inline";
+            
+            // Kurzer Schüttel-Effekt bei Fehlern
+            selectElement.style.transform = "translateX(5px)";
+            setTimeout(() => selectElement.style.transform = "translateX(-5px)", 50);
+            setTimeout(() => selectElement.style.transform = "translateX(0)", 100);
+        }
+    }
+</script>
+
+</body>
+</html>
