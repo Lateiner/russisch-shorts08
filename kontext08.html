@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontext-Check: бесить</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #2ecc71;
+            --error: #e74c3c;
+            --bg: #f4f7f9;
+            --card: #ffffff;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 550px;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress {
+            font-size: 0.85rem;
+            color: #95a5a6;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        h2 { color: var(--primary); margin-bottom: 20px; }
+
+        .situation-box {
+            background: #fdfdfd;
+            border: 2px solid #edf2f7;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .instruction {
+            margin-bottom: 20px;
+            font-size: 1rem;
+            font-style: italic;
+        }
+
+        .choice-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .choice-btn {
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            color: white;
+        }
+
+        .btn-yes { background-color: var(--success); }
+        .btn-no { background-color: var(--error); }
+
+        .choice-btn:hover { transform: translateY(-3px); opacity: 0.9; }
+
+        #feedback-area {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 60px;
+            display: none;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .next-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .choice-grid { grid-template-columns: 1fr; }
+            .situation-box { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="progress" id="progress">Situation 1 / 5</div>
+    <h2>Kontext-Check</h2>
+    <p class="instruction">Ist das Verb <b>бесить</b> hier angemessen?</p>
+
+    <div class="situation-box" id="situation">
+        <!-- Situation wird hier geladen -->
+    </div>
+
+    <div class="choice-grid" id="choices">
+        <button class="choice-btn btn-yes" onclick="handleChoice(true)">Ja, passt!</button>
+        <button class="choice-btn btn-no" onclick="handleChoice(false)">Nein, zu stark</button>
+    </div>
+
+    <div id="feedback-area"></div>
+    <button class="next-btn" id="next-btn" onclick="loadNext()">Nächste Situation</button>
+</div>
+
+<script>
+    const quizData = [
+        {
+            text: "Jemand drängelt sich in der Schlange vor, nachdem du 20 Minuten gewartet hast.",
+            correct: true,
+            feedback: "Richtig! Das ist eine klassische Situation, die einen 'auf die Palme bringt' (бесит)."
+        },
+        {
+            text: "Du siehst eine süße Katze im Park, die schläft.",
+            correct: false,
+            feedback: "Ganz genau. Hier wäre 'бесить' völlig falsch, da es extrem negativ ist."
+        },
+        {
+            text: "Dein Computer stürzt zum dritten Mal ab, während du an einer wichtigen Arbeit schreibst.",
+            correct: true,
+            feedback: "Richtig! Technisches Versagen im falschen Moment macht einen wahnsinnig."
+        },
+        {
+            text: "Ein Freund schenkt dir eine Tafel Schokolade, die du eigentlich ganz gerne magst.",
+            correct: false,
+            feedback: "Korrekt. 'Бесить' drückt Ablehnung und Ärger aus, nicht Freude oder kleine Vorlieben."
+        },
+        {
+            text: "Du versuchst zu schlafen, aber dein Nachbar bohrt seit Stunden Löcher in die Wand.",
+            correct: true,
+            feedback: "Absolut! Diese anhaltende Störung ist ein perfekter Kontext für 'бесить'."
+        }
+    ];
+
+    let currentIdx = 0;
+
+    function loadNext() {
+        if (currentIdx < quizData.length) {
+            const q = quizData[currentIdx];
+            document.getElementById('progress').innerText = `Situation ${currentIdx + 1} / ${quizData.length}`;
+            document.getElementById('situation').innerText = q.text;
+            document.getElementById('feedback-area').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('choices').style.display = 'grid';
+            currentIdx++;
+        } else {
+            showEnd();
+        }
+    }
+
+    function handleChoice(userChoice) {
+        const q = quizData[currentIdx - 1];
+        const feedback = document.getElementById('feedback-area');
+        
+        document.getElementById('choices').style.display = 'none';
+        feedback.style.display = 'block';
+        
+        if (userChoice === q.correct) {
+            feedback.style.backgroundColor = "#eafaf1";
+            feedback.style.color = "#27ae60";
+            feedback.innerHTML = "<b>Richtig!</b><br>" + q.feedback;
+        } else {
+            feedback.style.backgroundColor = "#fdedec";
+            feedback.style.color = "#c0392b";
+            feedback.innerHTML = "<b>Nicht ganz...</b><br>" + q.feedback;
+        }
+        
+        document.getElementById('next-btn').style.display = 'block';
+    }
+
+    function showEnd() {
+        const container = document.querySelector('.container');
+        container.innerHTML = `
+            <div style="font-size: 4rem;">🎯</div>
+            <h2>Check abgeschlossen!</h2>
+            <p>Du hast ein gutes Gespür dafür entwickelt, wann man im Russischen <b>бесить</b> verwendet.</p>
+            <button class="next-btn" style="display:block" onclick="location.reload()">Neustart</button>
+        `;
+    }
+
+    // Erster Start
+    loadNext();
+</script>
+
+</body>
+</html>
