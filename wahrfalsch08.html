@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etymologie & Kultur Quiz</title>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --true: #27ae60;
+            --false: #e74c3c;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #2d3436;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .quiz-card {
+            width: 100%;
+            max-width: 550px;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress { font-size: 0.8rem; color: #b2bec3; font-weight: bold; margin-bottom: 10px; }
+        .icon-box { font-size: 3rem; margin-bottom: 15px; }
+        h2 { margin: 0 0 15px 0; color: var(--primary); font-size: 1.4rem; }
+        .question-text { font-size: 1.1rem; line-height: 1.5; margin-bottom: 25px; min-height: 60px; }
+
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .quiz-btn {
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+        }
+        .btn-true { background-color: var(--true); }
+        .btn-false { background-color: var(--false); }
+        .quiz-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        #feedback {
+            margin-top: 20px;
+            padding: 18px;
+            border-radius: 12px;
+            display: none;
+            text-align: left;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .nav-btn {
+            margin-top: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: none;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        @media (max-width: 450px) { .btn-group { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="quiz-card" id="quiz-container">
+    <div class="progress" id="progress-text">Frage 1 / 4</div>
+    <div class="icon-box" id="icon">🧐</div>
+    <h2 id="title">Wahr oder Falsch?</h2>
+    <div class="question-text" id="question">Stammt das Wort <b>бесить</b> ursprünglich von dem Wort für Dämon (<b>бес</b>) ab?</div>
+
+    <div class="btn-group" id="btn-group">
+        <button class="quiz-btn btn-true" onclick="handleAnswer(true)">Wahr</button>
+        <button class="quiz-btn btn-false" onclick="handleAnswer(false)">Falsch</button>
+    </div>
+
+    <div id="feedback"></div>
+    <button class="nav-btn" id="next-btn" onclick="nextQuestion()">Weiter zur nächsten Frage</button>
+</div>
+
+<script>
+    const questions = [
+        {
+            icon: "🧐",
+            q: "Stammt das Wort <b>бесить</b> ursprünglich von dem Wort für Dämon (<b>бес</b>) ab?",
+            correct: true,
+            info: "Korrekt! <b>Бес</b> ist ein böser Geist. Wer 'бесит', macht einen also metaphorisch 'besessen' vor Wut."
+        },
+        {
+            icon: "📖",
+            q: "Ist <b>бесить</b> ein sehr formelles Wort, das man vor allem in offiziellen Briefen an Behörden verwendet?",
+            correct: false,
+            info: "Richtig (Falsch)! Das Wort ist <b>umgangssprachlich</b> und sehr emotional. In einem offiziellen Brief würde man eher 'раздражать' (reizen/irritieren) nutzen."
+        },
+        {
+            icon: "🧛",
+            q: "Gibt es im Russischen ein verwandtes Wort <b>бешенство</b>, das übersetzt 'Tollwut' bedeutet?",
+            correct: true,
+            info: "Stimmt! Es kommt aus derselben Wurzel. Jemand, der tollwütig ist, verhält sich so extrem wie jemand, der von Sinnen (oder Dämonen) ist."
+        },
+        {
+            icon: "👵",
+            q: "Gilt es in der russischen Kultur als besonders höflich, älteren Menschen direkt ins Gesicht zu sagen: 'Вы меня бесите!'?",
+            correct: false,
+            info: "Ganz genau (Falsch)! Das wäre extrem unhöflich und beleidigend. Das Wort zeigt einen Kontrollverlust der Emotionen an, was gegenüber Älteren tabu ist."
+        }
+    ];
+
+    let currentIdx = 0;
+
+    function handleAnswer(userChoice) {
+        const q = questions[currentIdx];
+        const feedback = document.getElementById('feedback');
+        const btnGroup = document.getElementById('btn-group');
+        const nextBtn = document.getElementById('next-btn');
+
+        btnGroup.style.display = 'none';
+        feedback.style.display = 'block';
+        nextBtn.style.display = 'block';
+
+        if (userChoice === q.correct) {
+            feedback.style.backgroundColor = "#eafaf1";
+            feedback.style.borderLeft = "5px solid var(--true)";
+            feedback.innerHTML = `<b style="color: var(--true)">Richtig! ✅</b><br>${q.info}`;
+        } else {
+            feedback.style.backgroundColor = "#fdedec";
+            feedback.style.borderLeft = "5px solid var(--false)";
+            feedback.innerHTML = `<b style="color: var(--false)">Nicht ganz... ❌</b><br>${q.info}`;
+        }
+
+        if (currentIdx === questions.length - 1) {
+            nextBtn.innerText = "Quiz abschließen";
+        }
+    }
+
+    function nextQuestion() {
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            document.getElementById('progress-text').innerText = `Frage ${currentIdx + 1} / ${questions.length}`;
+            document.getElementById('icon').innerText = questions[currentIdx].icon;
+            document.getElementById('question').innerHTML = questions[currentIdx].q;
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('btn-group').style.display = 'grid';
+        } else {
+            showEnd();
+        }
+    }
+
+    function showEnd() {
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = `
+            <div style="font-size: 4rem;">🏆</div>
+            <h2>Wissensexperte!</h2>
+            <p>Du kennst nun die dämonische Herkunft, das soziale Register und die Verwandtschaft des Wortes <b>бесить</b>.</p>
+            <button class="nav-btn" style="display:block" onclick="location.reload()">Nochmal spielen</button>
+        `;
+    }
+</script>
+
+</body>
+</html>
