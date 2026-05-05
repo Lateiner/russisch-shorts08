@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Flashcards: бесить</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --accent: #6c5ce7;
+            --text-dark: #2d3436;
+            --bg: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h2 { color: var(--text-dark); margin-bottom: 5px; }
+        .hint { color: #636e72; margin-bottom: 30px; font-size: 0.9rem; }
+
+        /* Flashcard Container */
+        .card-container {
+            perspective: 1000px;
+            width: 100%;
+            max-width: 400px;
+            height: 280px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 20px;
+        }
+
+        .card-container.is-flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Vorderseite */
+        .card-front {
+            background-color: white;
+            border: 3px solid var(--primary);
+        }
+
+        .card-front h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        /* Rückseite */
+        .card-back {
+            background-color: var(--primary);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .meaning {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .emotion-tag {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Navigation */
+        .nav-controls {
+            margin-top: 40px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .btn-nav {
+            background: white;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-nav:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .progress-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background: #dfe6e9;
+            border-radius: 50%;
+            transition: background 0.3s;
+        }
+
+        .dot.active {
+            background: var(--primary);
+        }
+
+        @media (max-width: 480px) {
+            .card-container { height: 240px; }
+            .card-front h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Russisch Flashcards</h2>
+    <p class="hint">Tippe auf die Karte, um sie zu drehen</p>
+
+    <div class="card-container" id="cardContainer" onclick="flipCard()">
+        <div class="card-inner">
+            <div class="card-face card-front">
+                <h1 id="russianText">Меня бесит этот снег!</h1>
+                <small style="margin-top: 15px; color: #b2bec3;">(Russisch)</small>
+            </div>
+            <div class="card-face card-back">
+                <div class="meaning" id="germanText">Mich nervt dieser Schnee!</div>
+                <div class="emotion-tag" id="emotionText">😡 Genervt / Aggressiv</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-controls">
+        <button class="btn-nav" onclick="prevCard(event)">Zurück</button>
+        <div class="progress-dots" id="dots"></div>
+        <button class="btn-nav" onclick="nextCard(event)">Weiter</button>
+    </div>
+
+<script>
+    const deck = [
+        { ru: "Меня бесит этот снег!", de: "Mich nervt dieser Schnee!", em: "😡 Genervt / Aggressiv" },
+        { ru: "Это меня бесит.", de: "Das macht mich wahnsinnig.", em: "🔥 Hohe Intensität" },
+        { ru: "Меня бесят пробки.", de: "Mich nerven Staus.", em: "🚕 Alltagssituation (Plural)" },
+        { ru: "Не беси меня!", de: "Bring mich nicht auf die Palme!", em: "⚠️ Warnung / Imperativ" },
+        { ru: "Её всё бесит.", de: "Sie nervt einfach alles.", em: "🙄 Generelle Gereiztheit" },
+        { ru: "Меня бесит твоя ложь.", de: "Mich kotzt deine Lüge an.", em: "💔 Tief sitzender Ärger" }
+    ];
+
+    let currentIndex = 0;
+    const container = document.getElementById('cardContainer');
+    const dotsContainer = document.getElementById('dots');
+
+    // Dots initialisieren
+    deck.forEach((_, i) => {
+        const dot = document.createElement('div');
+        dot.className = `dot ${i === 0 ? 'active' : ''}`;
+        dotsContainer.appendChild(dot);
+    });
+
+    function flipCard() {
+        container.classList.toggle('is-flipped');
+    }
+
+    function updateCard() {
+        // Zuerst zurückdrehen, falls sie gedreht war
+        container.classList.remove('is-flipped');
+        
+        setTimeout(() => {
+            const card = deck[currentIndex];
+            document.getElementById('russianText').innerText = card.ru;
+            document.getElementById('germanText').innerText = card.de;
+            document.getElementById('emotionText').innerText = card.em;
+            
+            // Dots aktualisieren
+            document.querySelectorAll('.dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentIndex);
+            });
+        }, 150);
+    }
+
+    function nextCard(event) {
+        event.stopPropagation();
+        currentIndex = (currentIndex + 1) % deck.length;
+        updateCard();
+    }
+
+    function prevCard(event) {
+        event.stopPropagation();
+        currentIndex = (currentIndex - 1 + deck.length) % deck.length;
+        updateCard();
+    }
+</script>
+
+</body>
+</html>
