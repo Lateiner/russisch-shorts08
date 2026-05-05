@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expert-Level: Russisch Emotionen (Randomized)</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --bg: #ecf0f1;
+            --card: #ffffff;
+            --correct: #27ae60;
+            --shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .quiz-card {
+            background: var(--card);
+            width: 100%;
+            max-width: 500px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 25px;
+            text-align: center;
+        }
+
+        .step-counter { font-size: 0.85rem; color: #7f8c8d; font-weight: bold; margin-bottom: 10px; }
+        
+        .sentence-display {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 15px 0;
+            min-height: 40px;
+        }
+
+        .context-hint {
+            font-size: 0.95rem;
+            color: #34495e;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .option-btn {
+            background: #fff;
+            border: 2px solid #dcdde1;
+            border-radius: 12px;
+            padding: 20px 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-btn:hover { border-color: #3498db; background: #f1f9ff; }
+        .option-btn span { font-size: 2.5rem; }
+        .option-btn b { font-size: 0.9rem; color: var(--primary); }
+
+        /* Status Classes */
+        .selected-correct { border-color: var(--correct) !important; background: #eafaf1 !important; }
+        .selected-wrong { border-color: var(--accent) !important; background: #fdedec !important; }
+
+        #feedback-msg {
+            margin-top: 20px;
+            font-weight: 600;
+            min-height: 40px;
+            font-size: 0.95rem;
+        }
+
+        .nav-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 10px;
+            display: none;
+        }
+
+        @media (max-width: 400px) {
+            .options-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-card">
+    <div id="quiz-ui">
+        <div class="step-counter" id="progress-text">Frage 1 von 4</div>
+        <div class="sentence-display" id="main-sentence">...</div>
+        <div class="context-hint" id="main-hint">...</div>
+
+        <div class="options-grid" id="options-container">
+            <!-- Buttons werden hier gemischt eingefügt -->
+        </div>
+
+        <div id="feedback-msg"></div>
+        <button class="nav-btn" id="next-btn" onclick="goToNext()">Nächste Frage</button>
+    </div>
+
+    <div id="finish-screen" style="display:none">
+        <div style="font-size: 4rem;">🎉</div>
+        <h2>Hervorragend!</h2>
+        <p>Du hast bewiesen, dass du die emotionale Wucht von <b>бесить</b> im Kontext verstehst.</p>
+        <button class="nav-btn" style="display:block" onclick="restart()">Neustart & Neu mischen</button>
+    </div>
+</div>
+
+<script>
+    const database = [
+        {
+            s: "Меня бесит этот снег!",
+            h: "Es schneit seit Tagen ununterbrochen.",
+            opts: [
+                { e: "😡", t: "Wut / Hass", c: true, f: "Richtig! 'бесить' ist viel stärker als nur 'nerven'." },
+                { e: "😒", t: "Leichte Genervtheit", c: false, f: "Zu schwach. Das Verb signalisiert das Ende der Geduld." }
+            ]
+        },
+        {
+            s: "Хватит бесить меня!",
+            h: "Jemand provoziert dich absichtlich immer weiter.",
+            opts: [
+                { e: "🤐", t: "Aggressives Schweigen", c: true, f: "Korrekt. Man fordert den anderen ultimativ auf, still zu sein." },
+                { e: "🙄", t: "Desinteresse", c: false, f: "Falsch. Du bist aktiv geladen, nicht gelangweilt." }
+            ]
+        },
+        {
+            s: "Сиди тихо!",
+            h: "Ein strenger Befehl, um eine Eskalation zu vermeiden.",
+            opts: [
+                { e: "😤", t: "Zorn bändigen", c: true, f: "Ja. 'Сиди тихо' ist die Konsequenz aus dem Genervtsein." },
+                { e: "😌", t: "Gelassenheit", c: false, f: "Keineswegs. Hier herrscht Hochspannung." }
+            ]
+        },
+        {
+            s: "Когда же он уже закончится?",
+            h: "Die Verzweiflung über eine nervige Situation.",
+            opts: [
+                { e: "😫", t: "Am Limit sein", c: true, f: "Richtig. Die Frage zeigt, dass man es nicht mehr aushält." },
+                { e: "🤔", t: "Neugier", c: false, f: "Nein, das ist keine sachliche Frage, sondern ein Stoßseufzer." }
+            ]
+        }
+    ];
+
+    let currentStep = 0;
+    let questions = [];
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function restart() {
+        currentStep = 0;
+        questions = shuffle([...database]);
+        document.getElementById('finish-screen').style.display = 'none';
+        document.getElementById('quiz-ui').style.display = 'block';
+        loadStep();
+    }
+
+    function loadStep() {
+        const q = questions[currentStep];
+        const container = document.getElementById('options-container');
+        const feedback = document.getElementById('feedback-msg');
+        
+        document.getElementById('progress-text').innerText = `Frage ${currentStep + 1} von ${questions.length}`;
+        document.getElementById('main-sentence').innerText = q.s;
+        document.getElementById('main-hint').innerText = q.h;
+        document.getElementById('next-btn').style.display = 'none';
+        feedback.innerText = "";
+        container.innerHTML = "";
+
+        // WICHTIG: Auch die Antwortmöglichkeiten mischen
+        const shuffledOpts = shuffle([...q.opts]);
+
+        shuffledOpts.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerHTML = `<span>${opt.e}</span><b>${opt.t}</b>`;
+            btn.onclick = () => handleChoice(btn, opt);
+            container.appendChild(btn);
+        });
+    }
+
+    function handleChoice(btn, data) {
+        const feedback = document.getElementById('feedback-msg');
+        const allBtns = document.querySelectorAll('.option-btn');
+        
+        allBtns.forEach(b => b.style.pointerEvents = 'none');
+        feedback.innerText = data.f;
+
+        if(data.c) {
+            btn.classList.add('selected-correct');
+            feedback.style.color = "var(--correct)";
+        } else {
+            btn.classList.add('selected-wrong');
+            feedback.style.color = "var(--accent)";
+        }
+
+        document.getElementById('next-btn').style.display = 'block';
+    }
+
+    function goToNext() {
+        currentStep++;
+        if(currentStep < questions.length) {
+            loadStep();
+        } else {
+            document.getElementById('quiz-ui').style.display = 'none';
+            document.getElementById('finish-screen').style.display = 'block';
+        }
+    }
+
+    // Erster Start
+    restart();
+</script>
+
+</body>
+</html>
