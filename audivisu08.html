@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio-Emoji Matching: бесить Expert</title>
+    <style>
+        :root {
+            --primary: #4834d4;
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --correct: #27ae60;
+            --wrong: #eb4d4b;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            align-self: center;
+        }
+
+        .progress { font-size: 0.9rem; color: #95a5a6; margin-bottom: 10px; font-weight: bold; }
+
+        .audio-btn {
+            background: #f9f9f9;
+            border: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .audio-btn:hover { transform: scale(1.1); background: #eff2ff; }
+        .audio-btn span { font-size: 2.5rem; }
+
+        .instruction { font-size: 1.1rem; color: #535c68; margin-bottom: 25px; height: 3rem; display: flex; align-items: center; justify-content: center; }
+
+        .emoji-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .choice {
+            background: #fff;
+            border: 2px solid #dcdde1;
+            border-radius: 15px;
+            padding: 20px 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .choice:hover { border-color: var(--primary); background: #f8f9ff; }
+        .choice .scene { font-size: 3rem; }
+        .choice .description { font-size: 0.8rem; font-weight: 600; color: #2f3542; }
+
+        .choice.selected-correct { border-color: var(--correct); background: #eafaf1; }
+        .choice.selected-wrong { border-color: var(--wrong); background: #fff5f5; }
+
+        #feedback { margin-top: 25px; font-weight: bold; min-height: 50px; line-height: 1.4; }
+
+        .nav-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            width: 100%;
+        }
+
+        @media (max-width: 500px) {
+            .emoji-options { grid-template-columns: 1fr; }
+            .choice { flex-direction: row; align-items: center; padding: 12px 20px; }
+            .choice .scene { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="quiz-container">
+    <div class="progress" id="progress-text">Runde 1 / 4</div>
+    <h2>Hörverständnis 🎧</h2>
+    <p class="instruction" id="instruction-text">Hör dir den Satz an und wähle die passende Situation!</p>
+
+    <div class="audio-btn" onclick="playCurrentAudio()">
+        <span>🔊</span>
+    </div>
+
+    <div class="emoji-options" id="options-grid">
+        <!-- Inhalte werden per JS geladen -->
+    </div>
+
+    <div id="feedback"></div>
+    <button class="nav-btn" id="next-btn" onclick="nextRound()">Nächste Runde</button>
+</div>
+
+<script>
+    const rounds = [
+        {
+            audio: "Тихо! Хватит бесить меня! Сиди тихо!",
+            options: [
+                { emoji: "📢🙉", label: "Lärm & Störung", correct: true },
+                { emoji: "📖☕", label: "Ruhe & Lesen", correct: false },
+                { emoji: "💤🛌", label: "Schlafen", correct: false }
+            ],
+            feedback: "'Бесить' passt hier zur Aggression durch Lärm."
+        },
+        {
+            audio: "Меня бесит этот снег! Когда же он уже закончится?",
+            options: [
+                { emoji: "🏖️☀️", label: "Sommerhitze", correct: false },
+                { emoji: "❄️😫", label: "Schneefrust", correct: true },
+                { emoji: "⛷️😃", label: "Skispaß", correct: false }
+            ],
+            feedback: "Genau! Der Sprecher ist vom ewigen Schnee extrem genervt."
+        },
+        {
+            audio: "Знаете ли вы глагол бесить?",
+            options: [
+                { emoji: "👩‍🏫🎓", label: "Erklären", correct: true },
+                { emoji: "🥊😡", label: "Kämpfen", correct: false },
+                { emoji: "🍕😋", label: "Essen", correct: false }
+            ],
+            feedback: "Richtig. Das ist der neutrale Anfang der Erklärung aus dem Video."
+        },
+        {
+            audio: "Напишите пример с этим глаголом в комментариях.",
+            options: [
+                { emoji: "🏃‍♂️💨", label: "Weglaufen", correct: false },
+                { emoji: "📵🤫", label: "Handyverbot", correct: false },
+                { emoji: "⌨️💬", label: "Schreiben", correct: true }
+            ],
+            feedback: "Korrekt! Die Aufforderung, ein Beispiel in die Kommentare zu schreiben."
+        }
+    ];
+
+    let currentRoundIdx = 0;
+    let shuffledRounds = [];
+
+    function initQuiz() {
+        shuffledRounds = [...rounds].sort(() => Math.random() - 0.5);
+        loadRound();
+    }
+
+    function loadRound() {
+        const round = shuffledRounds[currentRoundIdx];
+        const grid = document.getElementById('options-grid');
+        const feedback = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        
+        document.getElementById('progress-text').innerText = `Runde ${currentRoundIdx + 1} / ${shuffledRounds.length}`;
+        feedback.innerText = "";
+        nextBtn.style.display = "none";
+        grid.innerHTML = "";
+
+        // Optionen mischen
+        const shuffledOptions = [...round.options].sort(() => Math.random() - 0.5);
+
+        shuffledOptions.forEach(opt => {
+            const div = document.createElement('div');
+            div.className = 'choice';
+            div.innerHTML = `<div class="scene">${opt.emoji}</div><div class="description">${opt.label}</div>`;
+            div.onclick = () => checkAnswer(div, opt.correct, round.feedback);
+            grid.appendChild(div);
+        });
+    }
+
+    function playCurrentAudio() {
+        const text = shuffledRounds[currentRoundIdx].audio;
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = text;
+        msg.lang = 'ru-RU';
+        msg.rate = 0.85;
+        window.speechSynthesis.speak(msg);
+    }
+
+    function checkAnswer(el, isCorrect, info) {
+        const feedback = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        const allChoices = document.querySelectorAll('.choice');
+
+        allChoices.forEach(c => c.style.pointerEvents = 'none');
+
+        if (isCorrect) {
+            el.classList.add('selected-correct');
+            feedback.innerHTML = `<span style="color: var(--correct)">Richtig! ✅<br>${info}</span>`;
+        } else {
+            el.classList.add('selected-wrong');
+            feedback.innerHTML = `<span style="color: var(--wrong)">Nicht ganz. ❌<br>Hör noch einmal genau hin.</span>`;
+        }
+
+        nextBtn.style.display = "block";
+        if (currentRoundIdx === shuffledRounds.length - 1) {
+            nextBtn.innerText = "Ergebnis anzeigen";
+        }
+    }
+
+    function nextRound() {
+        currentRoundIdx++;
+        if (currentRoundIdx < shuffledRounds.length) {
+            loadRound();
+        } else {
+            showFinalScreen();
+        }
+    }
+
+    function showFinalScreen() {
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = `
+            <div style="font-size: 4rem;">🏆</div>
+            <h2>Super gemacht!</h2>
+            <p>Du hast alle Situationen rund um das Verb <b>бесить</b> gemeistert.</p>
+            <button class="nav-btn" style="display:block" onclick="location.reload()">Neustart</button>
+        `;
+    }
+
+    initQuiz();
+</script>
+
+</body>
+</html>
