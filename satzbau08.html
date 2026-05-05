@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Satzbau-Profi</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #2ecc71;
+            --error: #e74c3c;
+            --bg: #f0f2f5;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress { font-weight: bold; color: #95a5a6; font-size: 0.9rem; margin-bottom: 5px; }
+        h2 { color: var(--primary); margin: 0 0 10px 0; font-size: 1.5rem; }
+        .translation { font-style: italic; color: #7f8c8d; margin-bottom: 25px; display: block; }
+
+        .sentence-display {
+            min-height: 70px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            gap: 10px;
+            padding: 15px;
+            background: #fafafa;
+        }
+
+        .words-pool {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            min-height: 120px;
+            padding: 10px;
+        }
+
+        .word-tile {
+            background: white;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 12px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+        }
+
+        .correct-tile {
+            background: var(--success) !important;
+            border-color: var(--success) !important;
+            color: white !important;
+            cursor: default;
+        }
+
+        .shake { animation: shake 0.4s ease-in-out; background: var(--error) !important; border-color: var(--error) !important; color: white !important; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        .controls { margin-top: 30px; }
+        #feedback { font-weight: bold; height: 30px; margin-bottom: 15px; }
+        
+        .btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .btn-next { background: var(--primary); }
+
+        @media (max-width: 480px) {
+            .word-tile { font-size: 1rem; padding: 10px 14px; }
+            h2 { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="game-box">
+    <div class="progress" id="progress">Aufgabe 1 / 6</div>
+    <h2 id="task-title">Bilde den Satz</h2>
+    <span class="translation" id="translation">...</span>
+
+    <div class="sentence-display" id="drop-zone"></div>
+    <div class="words-pool" id="pool"></div>
+
+    <div class="controls">
+        <div id="feedback"></div>
+        <button class="btn" id="action-btn" onclick="resetTask()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const tasks = [
+        { sentence: ["Меня", "бесит", "этот", "снег"], de: "Mich nervt dieser Schnee!" },
+        { sentence: ["Сиди", "тихо"], de: "Sitz still!" },
+        { sentence: ["Хватит", "бесить", "меня"], de: "Hör auf, mich zu nerven!" },
+        { sentence: ["Когда", "же", "он", "закончится"], de: "Wann hört er denn endlich auf?" },
+        { sentence: ["Знаете", "ли", "вы", "этот", "глагол"], de: "Kennt ihr dieses Verb?" },
+        { sentence: ["Напишите", "пример", "в", "комментариях"], de: "Schreibt ein Beispiel in die Kommentare!" }
+    ];
+
+    let currentTaskIdx = 0;
+    let currentWordIdx = 0;
+
+    function loadTask() {
+        const task = tasks[currentTaskIdx];
+        currentWordIdx = 0;
+        
+        document.getElementById('progress').innerText = `Aufgabe ${currentTaskIdx + 1} / ${tasks.length}`;
+        document.getElementById('translation').innerText = `„${task.de}“`;
+        document.getElementById('drop-zone').innerHTML = "";
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('action-btn').innerText = "Neustart";
+        document.getElementById('action-btn').className = "btn";
+        document.getElementById('action-btn').onclick = resetTask;
+
+        const pool = document.getElementById('pool');
+        pool.innerHTML = "";
+
+        // Wörter mischen
+        const shuffled = [...task.sentence].sort(() => Math.random() - 0.5);
+        
+        shuffled.forEach(word => {
+            const tile = document.createElement('div');
+            tile.className = 'word-tile';
+            tile.innerText = word;
+            tile.onclick = () => handleTileClick(tile, word);
+            pool.appendChild(tile);
+        });
+    }
+
+    function handleTileClick(tile, word) {
+        const task = tasks[currentTaskIdx];
+        const feedback = document.getElementById('feedback');
+
+        if (word === task.sentence[currentWordIdx]) {
+            // Richtig
+            tile.classList.add('correct-tile');
+            tile.onclick = null;
+            document.getElementById('drop-zone').appendChild(tile);
+            currentWordIdx++;
+            feedback.innerText = "Richtig! ✨";
+            feedback.style.color = "var(--success)";
+
+            if (currentWordIdx === task.sentence.length) {
+                feedback.innerText = "Super! Satz komplett.";
+                const btn = document.getElementById('action-btn');
+                if (currentTaskIdx < tasks.length - 1) {
+                    btn.innerText = "Nächste Aufgabe";
+                    btn.className = "btn btn-next";
+                    btn.onclick = nextTask;
+                } else {
+                    showFinal();
+                }
+            }
+        } else {
+            // Falsch
+            tile.classList.add('shake');
+            feedback.innerText = "Überleg nochmal...";
+            feedback.style.color = "var(--error)";
+            setTimeout(() => tile.classList.remove('shake'), 400);
+        }
+    }
+
+    function nextTask() {
+        currentTaskIdx++;
+        loadTask();
+    }
+
+    function resetTask() {
+        loadTask();
+    }
+
+    function showFinal() {
+        const container = document.getElementById('game-box');
+        container.innerHTML = `
+            <div style="font-size: 4rem;">🏅</div>
+            <h2>Fantastisch!</h2>
+            <p>Du hast alle 6 Sätze fehlerfrei zusammengebaut.</p>
+            <button class="btn btn-next" onclick="location.reload()">Alles von vorn</button>
+        `;
+    }
+
+    // Start
+    loadTask();
+</script>
+
+</body>
+</html>
