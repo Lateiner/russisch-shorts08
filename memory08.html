@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Memory: бесить</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #2ecc71;
+            --bg: #f4f7f9;
+            --card-back: #2c3e50;
+            --text: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h2 { color: var(--primary); margin-bottom: 10px; text-align: center; }
+        .desc { margin-bottom: 20px; font-size: 0.9rem; color: #7f8c8d; text-align: center; max-width: 400px; }
+
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .memory-card {
+            aspect-ratio: 1 / 1;
+            background-color: var(--card-back);
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s, opacity 0.8s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .memory-card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .memory-card.matched {
+            opacity: 0;
+            pointer-events: none;
+            transform: rotateY(180deg) scale(0.8);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .card-back {
+            background-color: var(--card-back);
+            color: white;
+            font-size: 2rem;
+        }
+
+        .card-front {
+            background-color: white;
+            color: var(--text);
+            transform: rotateY(180deg);
+            border: 2px solid var(--primary);
+        }
+
+        .emoji { font-size: 2.5rem; }
+
+        .controls { margin-top: 30px; }
+        .reset-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        @media (min-width: 600px) {
+            .memory-grid { grid-template-columns: repeat(4, 1fr); }
+            .card-front { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Reaktions-Memory</h2>
+    <p class="desc">Finde das Bild und den dazu passenden russischen Ausruf!</p>
+
+    <div class="memory-grid" id="grid"></div>
+
+    <div class="controls">
+        <button class="reset-btn" onclick="initGame()">Spiel neustarten</button>
+    </div>
+
+<script>
+    const items = [
+        { id: 1, type: 'img', content: '🔊📱', pair: 'A' },
+        { id: 2, type: 'txt', content: 'Меня бесит музыка!', pair: 'A' },
+        { id: 3, type: 'img', content: '🚗🚗🚗', pair: 'B' },
+        { id: 4, type: 'txt', content: 'Бесят пробки!', pair: 'B' },
+        { id: 5, type: 'img', content: '🌧️', pair: 'C' },
+        { id: 6, type: 'txt', content: 'Бесит дождь!', pair: 'C' },
+        { id: 7, type: 'img', content: '📵', pair: 'D' },
+        { id: 8, type: 'txt', content: 'Меня бесит это!', pair: 'D' },
+        { id: 9, type: 'img', content: '🗣️📢', pair: 'E' },
+        { id: 10, type: 'txt', content: 'Бесят люди!', pair: 'E' },
+        { id: 11, type: 'img', content: '🦟', pair: 'F' },
+        { id: 12, type: 'txt', content: 'Бесит комар!', pair: 'F' }
+    ];
+
+    let flippedCards = [];
+    let lockBoard = false;
+
+    function initGame() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        flippedCards = [];
+        lockBoard = false;
+
+        // Shuffle
+        const shuffled = [...items].sort(() => Math.random() - 0.5);
+
+        shuffled.forEach(item => {
+            const card = document.createElement('div');
+            card.classList.add('memory-card');
+            card.dataset.pair = item.pair;
+            
+            card.innerHTML = `
+                <div class="card-back">?</div>
+                <div class="card-front">
+                    ${item.type === 'img' ? `<span class="emoji">${item.content}</span>` : `<span>${item.content}</span>`}
+                </div>
+            `;
+            
+            card.addEventListener('click', () => flipCard(card));
+            grid.appendChild(card);
+        });
+    }
+
+    function flipCard(card) {
+        if (lockBoard || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+        card.classList.add('flipped');
+        flippedCards.push(card);
+
+        if (flippedCards.length === 2) {
+            checkMatch();
+        }
+    }
+
+    function checkMatch() {
+        lockBoard = true;
+        const [card1, card2] = flippedCards;
+
+        if (card1.dataset.pair === card2.dataset.pair) {
+            setTimeout(() => {
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                flippedCards = [];
+                lockBoard = false;
+            }, 600);
+        } else {
+            setTimeout(() => {
+                card1.classList.remove('flipped');
+                card2.classList.remove('flipped');
+                flippedCards = [];
+                lockBoard = false;
+            }, 1000);
+        }
+    }
+
+    // Erststart
+    initGame();
+</script>
+
+</body>
+</html>
