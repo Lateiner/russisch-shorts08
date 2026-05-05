@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bild-Vokabel-Verknüpfung: бесить</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --bg: #f4f7f9;
+            --card: #ffffff;
+            --text: #2c3e50;
+            --correct: #2ecc71;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--card);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h2 { color: var(--primary); margin-bottom: 10px; }
+        .instruction { font-size: 1rem; color: #7f8c8d; margin-bottom: 25px; }
+
+        /* Draggable Element */
+        .vokabel-source {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .dragger {
+            background: var(--primary);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.4rem;
+            cursor: grab;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+            touch-action: none;
+            user-select: none;
+        }
+
+        /* Bild-Grid */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .drop-card {
+            background: #fff;
+            border: 2px dashed #dcdde1;
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .drop-card.hover { border-color: var(--primary); background: #f0f7ff; }
+        .drop-card.matched { border-color: var(--correct); background: #eafaf1; border-style: solid; }
+
+        .emoji-view { font-size: 4rem; margin-bottom: 10px; pointer-events: none; }
+        .label { font-size: 0.9rem; font-weight: 600; color: #636e72; pointer-events: none; }
+
+        .feedback-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: var(--correct);
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .matched .feedback-badge { display: flex; }
+
+        #final-msg {
+            margin-top: 30px;
+            font-weight: bold;
+            color: var(--correct);
+            display: none;
+        }
+
+        .reset-btn {
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @media (max-width: 480px) {
+            .image-grid { grid-template-columns: 1fr 1fr; }
+            .dragger { font-size: 1.1rem; padding: 12px 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Bild-Vokabel-Verknüpfung</h2>
+    <p class="instruction">Ziehe die Vokabel <b>бесить</b> auf alle Situationen, die einen "wahnsinnig machen" oder "extrem nerven".</p>
+
+    <div class="vokabel-source">
+        <div class="dragger" draggable="true" id="vokabel">бесить</div>
+    </div>
+
+    <div class="image-grid">
+        <!-- Passend: Schneesturm -->
+        <div class="drop-card" data-correct="true">
+            <div class="emoji-view">❄️🌪️</div>
+            <div class="label">Schneesturm</div>
+            <div class="feedback-badge">✓</div>
+        </div>
+
+        <!-- Unpassend: Schlafen -->
+        <div class="drop-card" data-correct="false">
+            <div class="emoji-view">😴</div>
+            <div class="label">Ruhiger Schlaf</div>
+        </div>
+
+        <!-- Passend: Lautes Handy -->
+        <div class="drop-card" data-correct="true">
+            <div class="emoji-view">🔊📱</div>
+            <div class="label">Laute Musik</div>
+            <div class="feedback-badge">✓</div>
+        </div>
+
+        <!-- Passend: Defektes Handy -->
+        <div class="drop-card" data-correct="true">
+            <div class="emoji-view">📵💢</div>
+            <div class="label">Kaputtes Handy</div>
+            <div class="feedback-badge">✓</div>
+        </div>
+
+        <!-- Unpassend: Eis essen -->
+        <div class="drop-card" data-correct="false">
+            <div class="emoji-view">🍦</div>
+            <div class="label">Eis essen</div>
+        </div>
+
+        <!-- Passend: Laute Person -->
+        <div class="drop-card" data-correct="true">
+            <div class="emoji-view">📢🗣️</div>
+            <div class="label">Laute Person</div>
+            <div class="feedback-badge">✓</div>
+        </div>
+    </div>
+
+    <div id="final-msg">Hervorragend! Du hast alle passenden Situationen erkannt. 🎉</div>
+    <button class="reset-btn" onclick="location.reload()">Neustart</button>
+</div>
+
+<script>
+    const dragger = document.getElementById('vokabel');
+    const cards = document.querySelectorAll('.drop-card');
+    const finalMsg = document.getElementById('final-msg');
+
+    // Drag & Drop Events
+    dragger.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text', e.target.id);
+    });
+
+    cards.forEach(card => {
+        card.addEventListener('dragover', (e) => e.preventDefault());
+        card.addEventListener('dragenter', function() { this.classList.add('hover'); });
+        card.addEventListener('dragleave', function() { this.classList.remove('hover'); });
+        
+        card.addEventListener('drop', function(e) {
+            this.classList.remove('hover');
+            const isCorrect = this.getAttribute('data-correct') === 'true';
+            
+            if (isCorrect) {
+                this.classList.add('matched');
+                checkWin();
+            } else {
+                this.style.animation = "shake 0.4s";
+                setTimeout(() => this.style.animation = "", 400);
+            }
+        });
+
+        // Touch-Unterstützung für Smartphones (einfaches Tippen)
+        card.addEventListener('click', function() {
+            const isCorrect = this.getAttribute('data-correct') === 'true';
+            if (isCorrect) {
+                this.classList.add('matched');
+                checkWin();
+            }
+        });
+    });
+
+    function checkWin() {
+        const totalCorrect = document.querySelectorAll('.drop-card[data-correct="true"]').length;
+        const matched = document.querySelectorAll('.drop-card.matched').length;
+        
+        if (totalCorrect === matched) {
+            finalMsg.style.display = 'block';
+            dragger.style.display = 'none';
+        }
+    }
+</script>
+
+<style>
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); border-color: #e74c3c; }
+        75% { transform: translateX(5px); border-color: #e74c3c; }
+    }
+</style>
+
+</body>
+</html>
